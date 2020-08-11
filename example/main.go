@@ -24,6 +24,7 @@ func main() {
 	jobQueue.Run()   // can not run jobqueue again after close it
 	jobQueue.Add(5)  // can not add a new job after close the jobqueue
 
+	fmt.Println("all jobs added")
 	jobQueue.Wait() // wait for jobqueue finished
 	fmt.Println("all jobs finished")
 }
