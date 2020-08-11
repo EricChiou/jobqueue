@@ -1,7 +1,7 @@
 package jobqueue
 
 import (
-	"log"
+	"errors"
 	"sync"
 )
 
@@ -26,16 +26,14 @@ func (queue *Queue) SetBlocked(block bool) {
 }
 
 // Run jobqueue
-func (queue *Queue) Run() bool {
+func (queue *Queue) Run() error {
 	if queue.closed {
 		queue.running = false
-		log.Println("jobqueue is closed.")
-		return false
+		return errors.New("jobqueue is closed.")
 	}
 
 	if queue.worker == nil {
-		log.Println("jobqueue is not set worker function yet.")
-		return false
+		return errors.New("jobqueue is not set worker function yet.")
 	}
 
 	queue.running = true
@@ -43,14 +41,13 @@ func (queue *Queue) Run() bool {
 		queue.run = run
 		go queue.run(queue)
 	}
-	return true
+	return nil
 }
 
 // Add a new job to jobqueue
-func (queue *Queue) Add(param interface{}) bool {
+func (queue *Queue) Add(param interface{}) error {
 	if queue.closed {
-		log.Println("jobqueue is closed.")
-		return false
+		return errors.New("jobqueue was closed.")
 	}
 
 	if queue.running {
@@ -62,16 +59,14 @@ func (queue *Queue) Add(param interface{}) bool {
 			select {
 			case queue.channel <- param:
 				queue.wg.Add(1)
-				return true
+				return nil
 			default:
-				log.Println("jobqueue is full.")
-				return false
+				return errors.New("jobqueue is full.")
 			}
 		}
 	}
 
-	log.Println("jobqueue is not start.")
-	return false
+	return errors.New("jobqueue is not start yet.")
 }
 
 // Wait for jobqueue finished
@@ -80,12 +75,14 @@ func (queue *Queue) Wait() {
 }
 
 // Start jobqueue
-func (queue *Queue) Start() {
+func (queue *Queue) Start() error {
 	if queue.run != nil {
 		queue.running = true
 	} else {
-		log.Println("jobqueue is not running.")
+		return errors.New("jobqueue is not running.")
 	}
+
+	return nil
 }
 
 // Stop jobqueue accept a new job
@@ -104,10 +101,12 @@ func (queue *Queue) Close() {
 func New(size int) Queue {
 	return Queue{
 		channel: make(chan interface{}, size),
+		wg:      sync.WaitGroup{},
 		worker:  nil,
 		blocked: false,
 		running: false,
 		closed:  false,
+		run:     nil,
 	}
 }
 
