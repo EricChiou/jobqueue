@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"jobqueue/jobqueue"
+	"jobqueue"
 	"time"
 )
 
